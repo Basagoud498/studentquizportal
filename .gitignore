@@ -1,0 +1,11 @@
+# Frontend build
+frontend/dist/
+
+# Backend sensitive files
+backend/mail_config.php
+backend/test_mail.php
+
+
+# Environment files
+.env
+.env.production

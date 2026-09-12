@@ -1,0 +1,210 @@
+import React, { useEffect, useState } from "react";
+import { API } from "./api";
+import "./styles.css";
+import "./theme-override.css";
+
+export default function Home({ user, setPage }) {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalQuestions: 0,
+    totalAttempts: 0,
+  });
+
+  const [topUsers, setTopUsers] = useState([]);
+  const [userAttempts, setUserAttempts] = useState(0);
+
+  // Fetch global stats + leaderboard preview
+  useEffect(() => {
+    fetch(API + "/get_stats.php")
+      .then((res) => res.json())
+      .then((data) => setStats(data))
+      .catch(() => {});
+
+    fetch(API + "/leaderboard.php")
+      .then((res) => res.json())
+      .then((data) => {
+        const sorted = data.sort((a, b) => b.score - a.score);
+        setTopUsers(sorted.slice(0, 3));
+      })
+      .catch(() => {});
+  }, []);
+
+  // 🔥 Fetch only logged-in user attempts
+  useEffect(() => {
+    if (!user) return;
+
+    fetch(API + "/get_attempts.php")
+      .then((res) => res.json())
+      .then((data) => {
+        const mine = data.filter(
+          (a) => a.user === user.name || a.email === user.email
+        );
+        setUserAttempts(mine.length);
+      })
+      .catch(() => {});
+  }, [user]);
+
+  return (
+    <div className="home-wrapper">
+      <div className="circle circle1"></div>
+      <div className="circle circle2"></div>
+
+      {/* HERO SECTION */}
+      <div className="hero-container">
+        <div className="hero-box">
+          <h1 className="title-text">Student Quiz Portal</h1>
+
+          <p className="subtitle">
+            Practice quizzes, track your progress, compete with others, and
+            improve everyday!
+          </p>
+
+          {!user ? (
+            <div className="button-row">
+              <button className="main-btn" onClick={() => setPage("login")}>
+                Login
+              </button>
+
+              <button className="main-btn" onClick={() => setPage("register")}>
+                Register
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="button-row">
+                <button
+                  className="main-btn"
+                  onClick={() => setPage("quiz-setup")}
+                >
+                  Start Quiz
+                </button>
+
+                <button
+                  className="main-btn"
+                  onClick={() =>
+                    setPage(
+                      user.role === "admin"
+                        ? "dashboard"
+                        : "student-dashboard"
+                    )
+                  }
+                >
+                  Dashboard
+                </button>
+              </div>
+            {user && user.role === "student" && (
+  <p className="student-info-text">
+
+    🔒 <b>Account Information</b>
+    <br />
+    Student accounts are managed by the administrator.
+    <br />
+    For permanent access or account updates,
+    <div style={{ marginTop: "10px" }}>
+  <button
+    className="request-link-btn"
+    onClick={() =>
+      window.open(
+        "https://forms.gle/mAUfC8vNhUA1VwNK6",
+        "_blank"
+      )
+    }
+  >
+    📝 Request Permanent Access
+  </button>
+</div>
+
+  </p>
+)}
+
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* SHOW EVERYTHING BELOW ONLY IF LOGGED IN */}
+      {user && (
+        <>
+          {/* PLATFORM STATS */}
+          <div className="stats-section">
+            <h2>Platform Statistics</h2>
+
+            <div className="stats-grid">
+              <div className="stat-box">
+                <h3>{stats.totalUsers}</h3>
+                <p>Registered Users</p>
+              </div>
+
+              <div className="stat-box">
+                <h3>{stats.totalQuestions}</h3>
+                <p>Total Questions</p>
+              </div>
+
+              <div className="stat-box">
+                <h3>
+                  {user.role === "admin"
+                    ? stats.totalAttempts
+                    : userAttempts}
+                </h3>
+                <p>Quizzes Attempted</p>
+              </div>
+            </div>
+          </div>
+
+          {/* FEATURE CARDS */}
+          <div className="feature-section">
+            <div className="feature-card">
+              <h3>💡 Practice Quizzes</h3>
+              <p>Interactive MCQs to test your knowledge.</p>
+            </div>
+
+            <div className="feature-card">
+              <h3>📊 Track Progress</h3>
+              <p>View your score history and performance.</p>
+            </div>
+
+            <div className="feature-card">
+              <h3>🏆 Leaderboard</h3>
+              <p>Compete with top scoring students.</p>
+            </div>
+
+            <div className="feature-card">
+              <h3>🛠 Admin Tools</h3>
+              <p>Manage questions and quiz content.</p>
+            </div>
+          </div>
+
+          {/* TOP USERS */}
+          <div className="leader-preview">
+            <h2>Top Performers</h2>
+
+            {topUsers.length === 0 ? (
+              <p>No leaderboard data yet.</p>
+            ) : (
+              <div className="leader-cards">
+                {topUsers.map((u, i) => (
+                  <div className="leader-card" key={i}>
+                    <span className="rank">{i + 1}</span>
+                    <h3>{u.name}</h3>
+                    <p>{u.score} pts</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CALL TO ACTION */}
+          <div className="cta-banner">
+            <h2>Ready to test your knowledge?</h2>
+            <button
+              className="main-btn"
+              onClick={() => setPage("quiz-setup")}
+            >
+              Start Quiz
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
